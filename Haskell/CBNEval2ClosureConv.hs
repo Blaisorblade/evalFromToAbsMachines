@@ -24,4 +24,5 @@ eval (App t0 t1) e =
 eval (Abs t)     e =
   Funct t e
 
+main :: Term -> ExpVal
 main t = eval t []

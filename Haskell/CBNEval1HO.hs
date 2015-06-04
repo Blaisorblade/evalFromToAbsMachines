@@ -15,4 +15,5 @@ eval (App t1 t2) e =
 eval (Abs t)     e =
   Funct (\v -> eval t (v : e))
 
+main :: Term -> ExpVal
 main t = eval t []
