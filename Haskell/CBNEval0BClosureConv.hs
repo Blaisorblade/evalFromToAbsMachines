@@ -1,6 +1,6 @@
 {- Just do closure conversion without inlining.
  -}
-module CBNEval2ClosureConv where
+module CBNEval0BClosureConv where
 import DeBrujin
 
 type Env = [DenVal]

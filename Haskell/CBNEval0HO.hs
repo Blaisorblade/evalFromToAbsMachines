@@ -1,4 +1,4 @@
-module CBNEval1HO where
+module CBNEval0HO where
 import DeBrujin
 
 newtype DenVal = Thunk { unThunk :: () -> ExpVal }

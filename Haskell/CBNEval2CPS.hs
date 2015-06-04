@@ -1,6 +1,6 @@
-{- Do CPS transformation, after CBNEval2BClosureConvCompl.
+{- Do CPS transformation, after CBNEval1ClosureConvCompl.
  -}
-module CBNEval3CPS where
+module CBNEval2CPS where
 import DeBrujin
 
 type Env = [DenVal]
