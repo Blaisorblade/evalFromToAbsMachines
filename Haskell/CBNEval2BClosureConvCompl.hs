@@ -1,10 +1,9 @@
 {- Do closure conversion and inlining.
  -}
-module CBNEval2ClosureConv where
+module CBNEval2BClosureConvCompl where
 import DeBrujin
 
 type Env = [DenVal]
---newtype DenVal = Thunk { unThunk :: () -> ExpVal }
 data ExpVal = Funct Term Env
 data DenVal = Thunk Term Env
 
