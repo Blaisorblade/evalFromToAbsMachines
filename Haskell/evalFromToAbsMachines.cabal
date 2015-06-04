@@ -16,7 +16,7 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 library
-  exposed-modules:     DeBrujin, CBNEval0HO, CBNEval0BClosureConv, CBNEval1ClosureConvCompl, CBNEval2CPS
+  exposed-modules:     DeBrujin, CBNEval0HO, CBNEval0BClosureConv, CBNEval1ClosureConvCompl, CBNEval2CPS, CBNEval3Defunc
   -- other-modules:       
   -- other-extensions:    
   build-depends:       base >=4.7 && <4.8
