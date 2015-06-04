@@ -17,10 +17,10 @@ unThunk (Thunk t e) = eval t e
 eval :: Term -> Env -> ExpVal
 eval (Var n)     e =
   unThunk (e !! n)
-eval (App t1 t2) e =
-  let f = unFunct (eval t1 e)
+eval (App t0 t1) e =
+  let f = unFunct (eval t0 e)
   in
-    f (Thunk t2 e)
+    f (Thunk t1 e)
 eval (Abs t)     e =
   Funct t e
 
