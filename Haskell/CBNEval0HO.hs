@@ -4,7 +4,7 @@ import DeBrujin
 newtype DenVal = Thunk { unThunk :: () -> ExpVal }
 newtype ExpVal = Funct { unFunct :: DenVal -> ExpVal }
 type Env = [DenVal]
-  
+ 
 eval :: Term -> Env -> ExpVal
 eval (Var n)     e =
   unThunk (e !! n) ()
