@@ -38,19 +38,9 @@ data EvalContext = Stop
 type MachineState = (Term, Env ExpVal, EvalContext)
 
 step :: MachineState -> MachineState
--- This is incorrect, here and below!
-
-step (Value (Var x), env, k) = (v, env', k)
-  where
-    c@(Closure name v env') = CBVEvalCEK.lookup x env
--- XXX Corrected version:
-{-
 step (Value (Var x), env, k) = (Value (Abs name v), env', k)
   where
     c@(Closure name v env') = CBVEvalCEK.lookup x env
--}
--- XXX Next, this must be corrected in all interpreters, and refactorings must
--- maybe be redone.
 
 step (Value (Abs x body), env, Arg t env' k) = (t, env', Fun (Closure x body env) k)
 step (Value (Abs x body), env, Fun (Closure y t env') k) = (t, extend y (Closure x body env) env', k)
@@ -69,7 +59,7 @@ initState t = (t, empty, Stop)
 -- By manual but mechanical inlining of eval and step, we get the following
 -- definition of the CEK machine:
 eval2 :: MachineState -> ExpVal
-eval2 (Value (Var x), env, k) = eval2 (v, env', k)
+eval2 (Value (Var x), env, k) = eval2 (Value (Abs name v), env', k)
   where
     c@(Closure name v env') = CBVEvalCEK.lookup x env
 eval2 (Value (Abs x body), env, Arg t env' k) = eval2 (t, env', Fun (Closure x body env) k)
@@ -79,7 +69,7 @@ eval2 (Comp (App t0 t1), env, k) = eval2 (t0, env, Arg t1 env k)
 
 -- By disentangling the nested match on k inside Value (Abs ...), we extract continue3:
 eval3 :: MachineState -> ExpVal
-eval3 (Value (Var x), env, k) = eval3 (v, env', k)
+eval3 (Value (Var x), env, k) = eval3 (Value (Abs name v), env', k)
   where
     c@(Closure name v env') = CBVEvalCEK.lookup x env
 eval3 (Value (Abs x body), env, k) = continue (Closure x body env) k
@@ -95,7 +85,7 @@ eval4 :: MachineState -> ExpVal
 eval4 (Value v, env, k) = evalValue v env k
 eval4 (Comp (App t0 t1), env, k) = eval4 (t0, env, Arg t1 env k)
 
-evalValue (Var x) env k = eval4 (v, env', k)
+evalValue (Var x) env k = eval4 (Value (Abs name v), env', k)
   where
     c@(Closure name v env') = CBVEvalCEK.lookup x env
 evalValue (Abs x body) env k = continue4 (Closure x body env) k
@@ -104,11 +94,41 @@ continue4 clos (Arg t env' k) = eval4 (t, env', Fun clos k)
 continue4 clos (Fun (Closure y t env') k) = eval4 (t, extend y clos env', k)
 continue4 clos Stop = clos
 
--- But now, to get Danvy's variant, we must fix the mismatch for evalValue on
--- Var, and then move evalValue's call to continue4 into the caller. In fact, it
--- seems the above variant (and all the equivalent ones) is genuinely incorrect,
--- because it will enter a closure even if the continuation is Stop. However,
--- that's accounted for in Abstracting abstract machines: in this case, the
--- driver of eval will rebuild the continuation. In the above, I have mixed up
--- something — apparently, the variable case in the original interpreter
--- (because of the different representations of closures).
+-- Inlining the call to eval4 (Value (Abs ...), and inlining the resulting call to evalValue (Abs ...), we get:
+
+eval5 :: MachineState -> ExpVal
+eval5 (Value v, env, k) = evalValue5 v env k
+eval5 (Comp (App t0 t1), env, k) = eval5 (t0, env, Arg t1 env k)
+
+-- After only one inlining step:
+-- evalValue (Var x) env k = evalValue (Abs name v) env' k
+-- After one more inlining step:
+-- evalValue5 (Var x) env k = continue5 (Closure name v env') k
+-- Since we're now rebuilding the same closure we matched on:
+{-
+evalValue5 (Var x) env k = continue5 c k
+  where
+    c = CBVEvalCEK.lookup x env
+-}
+-- Inlining c:
+evalValue5 (Var x) env k = continue5 (CBVEvalCEK.lookup x env) k
+evalValue5 (Abs x body) env k = continue5 (Closure x body env) k
+
+continue5 clos (Arg t env' k) = eval5 (t, env', Fun clos k)
+continue5 clos (Fun (Closure y t env') k) = eval5 (t, extend y clos env', k)
+continue5 clos Stop = clos
+
+-- Finally, by factoring the call to continue5 in evalValue5, we get Danvy's
+-- variant of the CEK machine:
+eval6 :: MachineState -> ExpVal
+eval6 (Value v, env, k) = continue6 (evalValue6 v env) k
+eval6 (Comp (App t0 t1), env, k) = eval6 (t0, env, Arg t1 env k)
+
+evalValue6 (Var x) env = CBVEvalCEK.lookup x env
+evalValue6 (Abs x body) env = Closure x body env
+
+continue6 clos (Arg t env' k) = eval6 (t, env', Fun clos k)
+continue6 clos (Fun (Closure y t env') k) = eval6 (t, extend y clos env', k)
+continue6 clos Stop = clos
+
+eval6Init = eval6 . initState
